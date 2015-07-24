@@ -2,10 +2,6 @@ package org.sqg.minatest;
 
 import java.io.Serializable;
 import java.net.InetSocketAddress;
-import java.rmi.RemoteException;
-import java.rmi.registry.LocateRegistry;
-import java.rmi.registry.Registry;
-import java.util.concurrent.TimeUnit;
 
 import org.apache.thrift.TException;
 import org.junit.Test;
@@ -14,7 +10,6 @@ import org.slf4j.LoggerFactory;
 import org.sqg.mina.BlockingClient;
 import org.sqg.mina.Server;
 import org.sqg.netty.RpcServer;
-import org.sqg.rmi.RMIServer;
 import org.sqg.thrift.ThriftClientBuilder;
 import org.sqg.thrift.ThriftServiceContainerServer;
 import org.sqg.thrift.generated.Greetings;
