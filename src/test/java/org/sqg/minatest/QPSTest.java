@@ -2,6 +2,10 @@ package org.sqg.minatest;
 
 import java.io.Serializable;
 import java.net.InetSocketAddress;
+import java.rmi.RemoteException;
+import java.rmi.registry.LocateRegistry;
+import java.rmi.registry.Registry;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.thrift.TException;
 import org.junit.Test;
@@ -9,6 +13,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.sqg.mina.BlockingClient;
 import org.sqg.mina.Server;
+import org.sqg.netty.RpcServer;
+import org.sqg.rmi.RMIServer;
 import org.sqg.thrift.ThriftClientBuilder;
 import org.sqg.thrift.ThriftServiceContainerServer;
 import org.sqg.thrift.generated.Greetings;
@@ -66,15 +72,17 @@ public class QPSTest {
                 Student s = new Student();
                 s.setName("sqg");
                 s.setAge(18);
+                Object response = null;
                 final int N = 0xffff;
                 long t1 = System.nanoTime();
                 for (int i = 0; i < N; ++i) {
-                    client.request(s);
+                    response = client.request(s);
                 }
                 long t2 = System.nanoTime();
                 LOGGER.info("N = {}, total = {} ms, avg = {} ms, QPS = {}", N,
                         (t2 - t1) * 1e-6, (t2 - t1) * 1e-6 / N, N
                                 / ((t2 - t1) * 1e-9));
+                LOGGER.info("response is {}", response);
             }
         }
     }
@@ -95,16 +103,28 @@ public class QPSTest {
             org.sqg.thrift.generated.Student s = new org.sqg.thrift.generated.Student();
             s.setName("sqg");
             s.setAge(18);
+            Object response = null;
             final int N = 0xffff;
             long t1 = System.nanoTime();
-            for (int i = 0; i < N; ++i) {
-                client.hello(s);
-            }
+            for (int i = 0; i < N; ++i)
+                response = client.hello(s);
             long t2 = System.nanoTime();
             LOGGER.info("N = {}, total = {} ms, avg = {} ms, QPS = {}", N,
                     (t2 - t1) * 1e-6, (t2 - t1) * 1e-6 / N, N
                             / ((t2 - t1) * 1e-9));
+            LOGGER.info("response is {}", response);
             client.getInputProtocol().getTransport().close();
         }
+    }
+
+    @Test
+    public void testSynchronizedNettyQPS() throws InterruptedException {
+        try (RpcServer server = new RpcServer(12345)) {
+            server.start();
+        }
+    }
+
+    @Test
+    public void testSynchronizedRMIQPS() {
     }
 }

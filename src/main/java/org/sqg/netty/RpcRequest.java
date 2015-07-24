@@ -24,6 +24,18 @@ public class RpcRequest implements Serializable {
         this.parameters = parameters;
     }
 
+    public Class<?> getIface() {
+        return iface;
+    }
+
+    public Method getMethod() {
+        return method;
+    }
+
+    public Object[] getParameters() {
+        return parameters;
+    }
+
     public static final class Decoder extends ByteToMessageDecoder {
 
         @Override
@@ -31,7 +43,7 @@ public class RpcRequest implements Serializable {
                 List<Object> out) throws Exception {
             int size = 0;
             byte[] bytes = null;
-            while (in.readableBytes() > Integer.BYTES) {
+            while (in.readableBytes() * 8 > Integer.SIZE) {
                 in.markReaderIndex();
                 size = in.readInt();
                 if (in.readableBytes() < size) {
@@ -40,7 +52,7 @@ public class RpcRequest implements Serializable {
                 }
                 bytes = new byte[size];
                 in.readBytes(bytes);
-                out.add(RpcService.SERIALIZER.deserialize(bytes,
+                out.add(RpcServer.SERIALIZER.deserialize(bytes,
                         RpcRequest.class));
             }
         }
@@ -51,7 +63,7 @@ public class RpcRequest implements Serializable {
         @Override
         protected void encode(ChannelHandlerContext ctx, RpcRequest msg,
                 ByteBuf out) throws Exception {
-            byte[] bytes = RpcService.SERIALIZER.serialize(msg);
+            byte[] bytes = RpcServer.SERIALIZER.serialize(msg);
             out.writeInt(bytes.length);
             out.writeBytes(bytes);
         }

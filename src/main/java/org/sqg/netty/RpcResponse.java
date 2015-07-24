@@ -12,6 +12,22 @@ public class RpcResponse {
     private Throwable throwable;
     private Object result;
 
+    public Throwable getThrowable() {
+        return throwable;
+    }
+
+    public void setThrowable(final Throwable value) {
+        throwable = value;
+    }
+
+    public Object getResult() {
+        return result;
+    }
+
+    public void setResult(final Object value) {
+        result = value;
+    }
+
     public static final class Decoder extends ByteToMessageDecoder {
 
         @Override
@@ -19,7 +35,7 @@ public class RpcResponse {
                 List<Object> out) throws Exception {
             int size = 0;
             byte[] bytes = null;
-            while (in.readableBytes() > Integer.BYTES) {
+            while (in.readableBytes() * 8 > Integer.SIZE) {
                 in.markReaderIndex();
                 size = in.readInt();
                 if (in.readableBytes() < size) {
@@ -28,7 +44,7 @@ public class RpcResponse {
                 }
                 bytes = new byte[size];
                 in.readBytes(bytes);
-                out.add(RpcService.SERIALIZER.deserialize(bytes,
+                out.add(RpcServer.SERIALIZER.deserialize(bytes,
                         RpcResponse.class));
             }
         }
@@ -39,7 +55,7 @@ public class RpcResponse {
         @Override
         protected void encode(ChannelHandlerContext ctx, RpcResponse msg,
                 ByteBuf out) throws Exception {
-            byte[] bytes = RpcService.SERIALIZER.serialize(msg);
+            byte[] bytes = RpcServer.SERIALIZER.serialize(msg);
             out.writeInt(bytes.length);
             out.writeBytes(bytes);
         }
