@@ -33,8 +33,8 @@ public abstract class MultipartIoService implements AutoCloseable {
 
             public MessageDecoderResult decodable(IoSession session, IoBuffer in) {
                 try {
-                return !in.prefixedDataAvailable(4) ? MessageDecoderResult.NEED_DATA
-                        : MessageDecoderResult.OK;
+                    return !in.prefixedDataAvailable(4) ? MessageDecoderResult.NEED_DATA
+                            : MessageDecoderResult.OK;
                 } catch (Exception e) {
                     return MessageDecoderResult.NOT_OK;
                 }

@@ -10,10 +10,11 @@ import io.netty.channel.socket.nio.NioServerSocketChannel;
 
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
+import java.util.concurrent.TimeUnit;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.sqg.util.JdkSerializer;
+import org.sqg.util.KryoSerializer;
 import org.sqg.util.Serializer;
 
 public final class RpcServer implements AutoCloseable {
@@ -21,7 +22,7 @@ public final class RpcServer implements AutoCloseable {
     private static final Logger LOGGER = LoggerFactory
             .getLogger(RpcServer.class);
 
-    public static final Serializer SERIALIZER = new JdkSerializer();
+    public static final Serializer SERIALIZER = new KryoSerializer();
 
     private int port;
     private volatile Channel ch;
@@ -30,11 +31,7 @@ public final class RpcServer implements AutoCloseable {
     private ServerBootstrap bootstrap;
     private RpcRequestHandler handler;
 
-    public RpcServer(final int port) {
-        this(port, null);
-    }
-
-    public RpcServer(final int port, final Object[] serviceImplementors) {
+    public RpcServer(final int port, final Object... serviceImplementors) {
         this.port = port;
         this.handler = new RpcRequestHandler(serviceImplementors);
     }
@@ -60,12 +57,16 @@ public final class RpcServer implements AutoCloseable {
                                 @Override
                                 protected void initChannel(SocketChannel ch)
                                         throws Exception {
-                                    ch.pipeline()
-                                            .addLast("requestDecoder",
-                                                    new RpcRequest.Decoder())
-                                            .addLast("responseEncoder",
-                                                    new RpcResponse.Encoder())
-                                            .addLast("requestHandler", handler);
+                                    if (ch.pipeline().get("requestDecoder") == null)
+                                        ch.pipeline().addLast("requestDecoder",
+                                                new RpcRequest.Decoder());
+                                    if (ch.pipeline().get("responseEncoder") == null)
+                                        ch.pipeline().addLast(
+                                                "responseEncoder",
+                                                new RpcResponse.Encoder());
+                                    if (ch.pipeline().get("requestHandler") == null)
+                                        ch.pipeline().addLast("requestHandler",
+                                                handler);
                                 }
                             });
                     ChannelFuture future = bootstrap.bind(port);
@@ -89,10 +90,12 @@ public final class RpcServer implements AutoCloseable {
                             ch = null;
                             LOGGER.info("shutdown bootstrap channel stopped.");
                             LOGGER.info("shutdown acceptor group start...");
-                            acceptorGroup.shutdownGracefully().await();
+                            acceptorGroup.shutdownGracefully(10L, 1000L,
+                                    TimeUnit.MILLISECONDS).await();
                             LOGGER.info("shutdown acceptor group stopped.");
                             LOGGER.info("shutdown worker group start...");
-                            workerGroup.shutdownGracefully().await();
+                            workerGroup.shutdownGracefully(10L, 1000L,
+                                    TimeUnit.MILLISECONDS).await();
                             LOGGER.info("shutdown worker group stopped.");
                             LOGGER.info("stopped server at {}.",
                                     getLocalAddress());

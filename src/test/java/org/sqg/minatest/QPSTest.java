@@ -9,12 +9,21 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.sqg.mina.BlockingClient;
 import org.sqg.mina.Server;
+import org.sqg.netty.RpcClient;
+import org.sqg.netty.RpcContract;
+import org.sqg.netty.RpcProxy;
 import org.sqg.netty.RpcServer;
 import org.sqg.thrift.ThriftClientBuilder;
 import org.sqg.thrift.ThriftServiceContainerServer;
 import org.sqg.thrift.generated.Greetings;
 
 public class QPSTest {
+
+    @RpcContract
+    public interface RpcGreetings {
+
+        String hello(Student s);
+    }
 
     private static final Logger LOGGER = LoggerFactory.getLogger(QPSTest.class);
 
@@ -68,7 +77,7 @@ public class QPSTest {
                 s.setName("sqg");
                 s.setAge(18);
                 Object response = null;
-                final int N = 0xffff;
+                final int N = 0x1fff;
                 long t1 = System.nanoTime();
                 for (int i = 0; i < N; ++i) {
                     response = client.request(s);
@@ -99,7 +108,7 @@ public class QPSTest {
             s.setName("sqg");
             s.setAge(18);
             Object response = null;
-            final int N = 0xffff;
+            final int N = 0x1fff;
             long t1 = System.nanoTime();
             for (int i = 0; i < N; ++i)
                 response = client.hello(s);
@@ -114,8 +123,32 @@ public class QPSTest {
 
     @Test
     public void testSynchronizedNettyQPS() throws InterruptedException {
-        try (RpcServer server = new RpcServer(12345)) {
+        try (RpcServer server = new RpcServer(12345, new RpcGreetings() {
+            @Override
+            public String hello(Student s) {
+                return "OK";
+            }
+        })) {
             server.start();
+            try (RpcClient client = new RpcClient(server.getLocalAddress())) {
+                RpcGreetings greetings = RpcProxy.newProxyInstance(client,
+                        RpcGreetings.class);
+                final int N = 0x1fff;
+                String response = null;
+                Student s = new Student();
+                s.setName("sqg");
+                s.setAge(18);
+                for (int i = 0; i < 10; ++i)
+                    response = greetings.hello(s);
+                long t1 = System.nanoTime();
+                for (int i = 0; i < N; ++i)
+                    response = greetings.hello(s);
+                long t2 = System.nanoTime();
+                LOGGER.info("N = {}, total = {} ms, avg = {} ms, QPS = {}", N,
+                        (t2 - t1) * 1e-6, (t2 - t1) * 1e-6 / N, N
+                                / ((t2 - t1) * 1e-9));
+                LOGGER.info("response is {}", response);
+            }
         }
     }
 

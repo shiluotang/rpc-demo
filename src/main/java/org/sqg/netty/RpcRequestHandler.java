@@ -1,5 +1,6 @@
 package org.sqg.netty;
 
+import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 
@@ -9,6 +10,7 @@ import java.util.Collection;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
+@Sharable
 public class RpcRequestHandler extends SimpleChannelInboundHandler<RpcRequest> {
 
     private ConcurrentMap<Class<?>, Object> services;
@@ -69,12 +71,12 @@ public class RpcRequestHandler extends SimpleChannelInboundHandler<RpcRequest> {
         RpcResponse response = new RpcResponse();
         try {
             response.setResult(request.getMethod().invoke(servant,
-                    request.getParameters()));
+                    request.getArguments()));
         } catch (IllegalAccessException | IllegalArgumentException
                 | InvocationTargetException e) {
             response.setThrowable(e);
         }
-        return null;
+        return response;
     }
 
     @Override
@@ -83,8 +85,7 @@ public class RpcRequestHandler extends SimpleChannelInboundHandler<RpcRequest> {
         Object servant = getServant(msg);
         if (servant == null)
             return;
-        ctx.writeAndFlush(processRequest(msg, servant));
-        ctx.close();
+        ctx.writeAndFlush(processRequest(msg, servant)).sync();
     }
 
 }

@@ -1,5 +1,7 @@
 package org.sqg.netty;
 
+import java.io.Serializable;
+
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.ByteToMessageDecoder;
@@ -7,7 +9,9 @@ import io.netty.handler.codec.MessageToByteEncoder;
 
 import java.util.List;
 
-public class RpcResponse {
+public class RpcResponse implements Serializable {
+
+    private static final long serialVersionUID = 1628980768995501430L;
 
     private Throwable throwable;
     private Object result;

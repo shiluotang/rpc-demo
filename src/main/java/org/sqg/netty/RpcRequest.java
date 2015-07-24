@@ -14,26 +14,36 @@ public class RpcRequest implements Serializable {
     private static final long serialVersionUID = 9094466951558223550L;
 
     private Class<?> iface;
-    private Method method;
-    private Object[] parameters;
+    private String methodName;
+    private Class<?>[] parameterTypes;
+    private Object[] arguments;
 
-    public RpcRequest(final Class<?> iface, final Method method,
-            final Object... parameters) {
+    public RpcRequest(final Class<?> iface, final String methodName,
+            final Class<?>[] parameterTypes, final Object[] arguments) {
         this.iface = iface;
-        this.method = method;
-        this.parameters = parameters;
+        this.methodName = methodName;
+        this.parameterTypes = parameterTypes;
+        this.arguments = arguments;
     }
 
     public Class<?> getIface() {
         return iface;
     }
 
-    public Method getMethod() {
-        return method;
+    public String getMethodName() {
+        return methodName;
     }
 
-    public Object[] getParameters() {
-        return parameters;
+    public Object[] getArguments() {
+        return arguments;
+    }
+
+    public Method getMethod() {
+        try {
+            return iface.getMethod(methodName, parameterTypes);
+        } catch (NoSuchMethodException | SecurityException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     public static final class Decoder extends ByteToMessageDecoder {
