@@ -23,7 +23,7 @@ public final class RpcRequestHandler {
     }
 
     public Object getServant(final RpcRequest request) {
-        return services.get(request.getIface().getName());
+        return services.get(request.getIfaceName());
     }
 
     public void addService(final Object service) {
@@ -57,10 +57,9 @@ public final class RpcRequestHandler {
             final Object servant) {
         RpcResponse response = new RpcResponse();
         try {
-            response.setResult(request.getMethod().invoke(servant,
+            response.setResult(request.getCglibFastMethod().invoke(servant,
                     request.getArguments()));
-        } catch (IllegalAccessException | IllegalArgumentException
-                | InvocationTargetException e) {
+        } catch (IllegalArgumentException | InvocationTargetException e) {
             response.setThrowable(e);
         }
         return response;

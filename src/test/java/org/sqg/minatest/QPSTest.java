@@ -20,6 +20,19 @@ public class QPSTest {
     public interface RpcGreetings {
 
         String hello(Student s);
+
+        void hello2();
+    }
+
+    private static final class RpcGreetingsImpl implements RpcGreetings {
+        @Override
+        public String hello(Student s) {
+            return "OK";
+        }
+
+        @Override
+        public void hello2() {
+        }
     }
 
     private static final Logger LOGGER = LoggerFactory.getLogger(QPSTest.class);
@@ -61,12 +74,7 @@ public class QPSTest {
     @Test
     public void testSynchronizedMinaQPS() {
         try (final org.sqg.mina.RpcServer server = new org.sqg.mina.RpcServer(
-                12345, new RpcGreetings() {
-                    @Override
-                    public String hello(Student s) {
-                        return "OK";
-                    }
-                })) {
+                12345, new RpcGreetingsImpl())) {
             server.start();
             try (org.sqg.mina.RpcClient client = new org.sqg.mina.RpcClient(
                     server.getLocalAddress())) {
@@ -76,12 +84,12 @@ public class QPSTest {
                 s.setName("sqg");
                 s.setAge(18);
                 String response = null;
-                final int N = 0x1fff;
+                final int N = 0x1ffff;
                 for (int i = 0; i < 10; ++i)
                     greetings.hello(s);
                 long t1 = System.nanoTime();
                 for (int i = 0; i < N; ++i)
-                    Assert.assertEquals("OK", response = greetings.hello(s));
+                    greetings.hello2();
                 long t2 = System.nanoTime();
                 LOGGER.info("N = {}, total = {} ms, avg = {} ms, QPS = {}", N,
                         (t2 - t1) * 1e-6, (t2 - t1) * 1e-6 / N, N
@@ -108,7 +116,7 @@ public class QPSTest {
             s.setName("sqg");
             s.setAge(18);
             String response = null;
-            final int N = 0x1fff;
+            final int N = 0x1ffff;
             for (int i = 0; i < 10; ++i)
                 client.hello(s);
             long t1 = System.nanoTime();
@@ -126,18 +134,13 @@ public class QPSTest {
     @Test
     public void testSynchronizedNettyQPS() throws InterruptedException {
         try (org.sqg.netty.RpcServer server = new org.sqg.netty.RpcServer(
-                12345, new RpcGreetings() {
-                    @Override
-                    public String hello(Student s) {
-                        return "OK";
-                    }
-                })) {
+                12345, new RpcGreetingsImpl())) {
             server.start();
             try (org.sqg.netty.RpcClient client = new org.sqg.netty.RpcClient(
                     server.getLocalAddress())) {
                 RpcGreetings greetings = RpcProxy.newProxyInstance(client,
                         RpcGreetings.class);
-                final int N = 0x1fff;
+                final int N = 0x1ffff;
                 String response = null;
                 Student s = new Student();
                 s.setName("sqg");
