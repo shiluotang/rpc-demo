@@ -19,8 +19,10 @@ import java.util.concurrent.TimeUnit;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.sqg.rpc.RpcRequest;
+import org.sqg.rpc.RpcResponse;
 
-public class RpcClient implements AutoCloseable {
+public final class RpcClient extends org.sqg.rpc.RpcClient {
 
     private static final Logger LOGGER = LoggerFactory
             .getLogger(RpcClient.class);
@@ -67,12 +69,11 @@ public class RpcClient implements AutoCloseable {
             bootstrap.handler(new ChannelInitializer<SocketChannel>() {
                 @Override
                 protected void initChannel(SocketChannel ch) throws Exception {
+                    Codec<RpcResponse, RpcRequest> codec = new Codec<>(RpcResponse.class, RpcRequest.class);
                     if (ch.pipeline().get("requestEncoder") == null)
-                        ch.pipeline().addLast("requestEncoder",
-                                new RpcRequest.Encoder());
+                        ch.pipeline().addLast("requestEncoder", codec.getEncoder());
                     if (ch.pipeline().get("responseDecoder") == null)
-                        ch.pipeline().addLast("responseDecoder",
-                                new RpcResponse.Decoder());
+                        ch.pipeline().addLast("responseDecoder", codec.getDecoder());
                     if (ch.pipeline().get("responseReceiver") == null)
                         ch.pipeline().addLast("responseReceiver",
                                 new RpcResponseHandler());
@@ -86,7 +87,7 @@ public class RpcClient implements AutoCloseable {
         }
     }
 
-    public RpcResponse doRpcCall(final RpcRequest request) {
+    public RpcResponse doRPC(final RpcRequest request) {
         try {
             if (channel == null)
                 channel = bootstrap

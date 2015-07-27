@@ -6,8 +6,6 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 
-import org.sqg.mina.AbstractSerializer;
-
 public final class JdkSerializer extends AbstractSerializer {
 
     @Override

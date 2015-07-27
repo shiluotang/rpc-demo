@@ -1,10 +1,8 @@
-package org.sqg.mina;
+package org.sqg.util;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-
-import org.sqg.util.Serializer;
 
 public abstract class AbstractSerializer implements Serializer {
 

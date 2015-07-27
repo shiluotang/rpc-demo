@@ -13,6 +13,10 @@ public final class RpcRequest implements Externalizable {
     private Class<?>[] parameterTypes;
     private Object[] arguments;
 
+    public RpcRequest() {
+
+    }
+
     public RpcRequest(final Class<?> iface, final String methodName,
             final Class<?>[] parameterTypes, final Object[] arguments) {
         this.iface = iface;

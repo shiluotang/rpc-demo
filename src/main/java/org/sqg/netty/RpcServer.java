@@ -3,7 +3,10 @@ package org.sqg.netty;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelHandler.Sharable;
+import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInitializer;
+import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
@@ -14,15 +17,37 @@ import java.util.concurrent.TimeUnit;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.sqg.util.KryoSerializer;
-import org.sqg.util.Serializer;
+import org.sqg.rpc.RpcRequest;
+import org.sqg.rpc.RpcResponse;
 
 public final class RpcServer implements AutoCloseable {
 
     private static final Logger LOGGER = LoggerFactory
             .getLogger(RpcServer.class);
 
-    public static final Serializer SERIALIZER = new KryoSerializer();
+    @Sharable
+    public class RpcRequestHandler extends
+            SimpleChannelInboundHandler<RpcRequest> {
+
+        private org.sqg.rpc.RpcRequestHandler handler;
+
+        public RpcRequestHandler() {
+            this(null);
+        }
+
+        public RpcRequestHandler(Object[] serviceImplementors) {
+            handler = new org.sqg.rpc.RpcRequestHandler(serviceImplementors);
+        }
+
+        @Override
+        protected void channelRead0(final ChannelHandlerContext ctx,
+                final RpcRequest msg) throws Exception {
+            Object servant = handler.getServant(msg);
+            if (servant == null)
+                return;
+            ctx.writeAndFlush(handler.processRequest(msg, servant)).sync();
+        }
+    }
 
     private int port;
     private volatile Channel ch;
@@ -57,13 +82,15 @@ public final class RpcServer implements AutoCloseable {
                                 @Override
                                 protected void initChannel(SocketChannel ch)
                                         throws Exception {
+                                    Codec<RpcRequest, RpcResponse> codec = new Codec<>(
+                                            RpcRequest.class, RpcResponse.class);
                                     if (ch.pipeline().get("requestDecoder") == null)
                                         ch.pipeline().addLast("requestDecoder",
-                                                new RpcRequest.Decoder());
+                                                codec.getDecoder());
                                     if (ch.pipeline().get("responseEncoder") == null)
                                         ch.pipeline().addLast(
                                                 "responseEncoder",
-                                                new RpcResponse.Encoder());
+                                                codec.getEncoder());
                                     if (ch.pipeline().get("requestHandler") == null)
                                         ch.pipeline().addLast("requestHandler",
                                                 handler);

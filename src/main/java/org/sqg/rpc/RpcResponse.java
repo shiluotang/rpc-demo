@@ -7,15 +7,15 @@ import java.io.ObjectOutput;
 
 public final class RpcResponse implements Externalizable {
 
-    private Throwable throwable;
     private Object result;
+    private Throwable throwable;
 
-    public Throwable getThrowable() {
-        return throwable;
+    public RpcResponse() {
     }
 
-    public void setThrowable(final Throwable value) {
-        throwable = value;
+    public RpcResponse(final Object result, final Throwable throwable) {
+        this.result = result;
+        this.throwable = throwable;
     }
 
     public Object getResult() {
@@ -24,6 +24,14 @@ public final class RpcResponse implements Externalizable {
 
     public void setResult(final Object value) {
         result = value;
+    }
+
+    public Throwable getThrowable() {
+        return throwable;
+    }
+
+    public void setThrowable(final Throwable value) {
+        throwable = value;
     }
 
     @Override

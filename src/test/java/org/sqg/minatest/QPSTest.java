@@ -4,15 +4,12 @@ import java.io.Serializable;
 import java.net.InetSocketAddress;
 
 import org.apache.thrift.TException;
+import org.junit.Assert;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.sqg.mina.BlockingClient;
-import org.sqg.mina.Server;
-import org.sqg.netty.RpcClient;
-import org.sqg.netty.RpcContract;
-import org.sqg.netty.RpcProxy;
-import org.sqg.netty.RpcServer;
+import org.sqg.rpc.RpcContract;
+import org.sqg.rpc.RpcProxy;
 import org.sqg.thrift.ThriftClientBuilder;
 import org.sqg.thrift.ThriftServiceContainerServer;
 import org.sqg.thrift.generated.Greetings;
@@ -63,25 +60,28 @@ public class QPSTest {
 
     @Test
     public void testSynchronizedMinaQPS() {
-        try (final Server server = new Server(12345) {
-
-            @Override
-            protected Object handleMessage(Object messageObj) {
-                // LOGGER.info("RECEIVED = {}", messageObj);
-                return "OK";
-            }
-        }) {
-            try (final BlockingClient client = new BlockingClient(
+        try (final org.sqg.mina.RpcServer server = new org.sqg.mina.RpcServer(
+                12345, new RpcGreetings() {
+                    @Override
+                    public String hello(Student s) {
+                        return "OK";
+                    }
+                })) {
+            server.start();
+            try (org.sqg.mina.RpcClient client = new org.sqg.mina.RpcClient(
                     server.getLocalAddress())) {
+                RpcGreetings greetings = RpcProxy.newProxyInstance(client,
+                        RpcGreetings.class);
                 Student s = new Student();
                 s.setName("sqg");
                 s.setAge(18);
-                Object response = null;
+                String response = null;
                 final int N = 0x1fff;
+                for (int i = 0; i < 10; ++i)
+                    greetings.hello(s);
                 long t1 = System.nanoTime();
-                for (int i = 0; i < N; ++i) {
-                    response = client.request(s);
-                }
+                for (int i = 0; i < N; ++i)
+                    Assert.assertEquals("OK", response = greetings.hello(s));
                 long t2 = System.nanoTime();
                 LOGGER.info("N = {}, total = {} ms, avg = {} ms, QPS = {}", N,
                         (t2 - t1) * 1e-6, (t2 - t1) * 1e-6 / N, N
@@ -107,11 +107,13 @@ public class QPSTest {
             org.sqg.thrift.generated.Student s = new org.sqg.thrift.generated.Student();
             s.setName("sqg");
             s.setAge(18);
-            Object response = null;
+            String response = null;
             final int N = 0x1fff;
+            for (int i = 0; i < 10; ++i)
+                client.hello(s);
             long t1 = System.nanoTime();
             for (int i = 0; i < N; ++i)
-                response = client.hello(s);
+                Assert.assertEquals("OK", response = client.hello(s));
             long t2 = System.nanoTime();
             LOGGER.info("N = {}, total = {} ms, avg = {} ms, QPS = {}", N,
                     (t2 - t1) * 1e-6, (t2 - t1) * 1e-6 / N, N
@@ -123,14 +125,16 @@ public class QPSTest {
 
     @Test
     public void testSynchronizedNettyQPS() throws InterruptedException {
-        try (RpcServer server = new RpcServer(12345, new RpcGreetings() {
-            @Override
-            public String hello(Student s) {
-                return "OK";
-            }
-        })) {
+        try (org.sqg.netty.RpcServer server = new org.sqg.netty.RpcServer(
+                12345, new RpcGreetings() {
+                    @Override
+                    public String hello(Student s) {
+                        return "OK";
+                    }
+                })) {
             server.start();
-            try (RpcClient client = new RpcClient(server.getLocalAddress())) {
+            try (org.sqg.netty.RpcClient client = new org.sqg.netty.RpcClient(
+                    server.getLocalAddress())) {
                 RpcGreetings greetings = RpcProxy.newProxyInstance(client,
                         RpcGreetings.class);
                 final int N = 0x1fff;
@@ -142,7 +146,7 @@ public class QPSTest {
                     response = greetings.hello(s);
                 long t1 = System.nanoTime();
                 for (int i = 0; i < N; ++i)
-                    response = greetings.hello(s);
+                    Assert.assertEquals("OK", response = greetings.hello(s));
                 long t2 = System.nanoTime();
                 LOGGER.info("N = {}, total = {} ms, avg = {} ms, QPS = {}", N,
                         (t2 - t1) * 1e-6, (t2 - t1) * 1e-6 / N, N
