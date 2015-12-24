@@ -7,12 +7,12 @@ import io.netty.handler.codec.MessageToByteEncoder;
 
 import java.util.List;
 
-import org.sqg.util.JdkSerializer;
+import org.sqg.util.KryoSerializer;
 import org.sqg.util.Serializer;
 
 public final class Codec<U, V> {
 
-    private static final Serializer SERIALIZER = new JdkSerializer();
+    private static final Serializer SERIALIZER = new KryoSerializer();
 
     private final class Encoder extends MessageToByteEncoder<U> {
 

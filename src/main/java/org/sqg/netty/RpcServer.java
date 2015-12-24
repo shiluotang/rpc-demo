@@ -71,7 +71,7 @@ public final class RpcServer implements AutoCloseable {
         if (ch == null) {
             synchronized (this) {
                 if (ch == null) {
-                    LOGGER.info("starting server at {} ...", getLocalAddress());
+                    LOGGER.debug("starting server at {} ...", getLocalAddress());
                     acceptorGroup = new NioEventLoopGroup();
                     workerGroup = new NioEventLoopGroup();
                     bootstrap = new ServerBootstrap();
@@ -99,7 +99,7 @@ public final class RpcServer implements AutoCloseable {
                     ChannelFuture future = bootstrap.bind(port);
                     future.sync();
                     ch = future.channel();
-                    LOGGER.info("started server at {}.", getLocalAddress());
+                    LOGGER.debug("started server at {}.", getLocalAddress());
                 }
             }
         }
@@ -109,22 +109,22 @@ public final class RpcServer implements AutoCloseable {
         if (ch != null) {
             synchronized (this) {
                 if (ch != null) {
-                    LOGGER.info("stopping server at {} ...", getLocalAddress());
+                    LOGGER.debug("stopping server at {} ...", getLocalAddress());
                     if (ch != null) {
                         try {
-                            LOGGER.info("shutdown bootstrap channel start...");
+                            LOGGER.debug("shutdown bootstrap channel start...");
                             ch.close().await();
                             ch = null;
-                            LOGGER.info("shutdown bootstrap channel stopped.");
-                            LOGGER.info("shutdown acceptor group start...");
+                            LOGGER.debug("shutdown bootstrap channel stopped.");
+                            LOGGER.debug("shutdown acceptor group start...");
                             acceptorGroup.shutdownGracefully(10L, 1000L,
                                     TimeUnit.MILLISECONDS).await();
-                            LOGGER.info("shutdown acceptor group stopped.");
-                            LOGGER.info("shutdown worker group start...");
+                            LOGGER.debug("shutdown acceptor group stopped.");
+                            LOGGER.debug("shutdown worker group start...");
                             workerGroup.shutdownGracefully(10L, 1000L,
                                     TimeUnit.MILLISECONDS).await();
-                            LOGGER.info("shutdown worker group stopped.");
-                            LOGGER.info("stopped server at {}.",
+                            LOGGER.debug("shutdown worker group stopped.");
+                            LOGGER.debug("stopped server at {}.",
                                     getLocalAddress());
                         } catch (InterruptedException e) {
                             throw new RuntimeException(e);

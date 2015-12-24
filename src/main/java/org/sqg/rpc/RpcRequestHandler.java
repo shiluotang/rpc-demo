@@ -56,10 +56,12 @@ public final class RpcRequestHandler {
     public RpcResponse processRequest(final RpcRequest request,
             final Object servant) {
         RpcResponse response = new RpcResponse();
+        response.setRequestId(request.getRequestId());
         try {
-            response.setResult(request.getCglibFastMethod().invoke(servant,
+            response.setResult(request.getMethod().invoke(servant,
                     request.getArguments()));
-        } catch (IllegalArgumentException | InvocationTargetException e) {
+        } catch (IllegalArgumentException | InvocationTargetException
+                | IllegalAccessException e) {
             response.setThrowable(e);
         }
         return response;

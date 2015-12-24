@@ -2,19 +2,53 @@ package org.sqg.minatest;
 
 import java.io.Serializable;
 import java.net.InetSocketAddress;
+import java.util.Objects;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
 
 import org.apache.thrift.TException;
-import org.junit.Assert;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.sqg.ons.RpcServer;
+import org.sqg.rpc.RpcClient;
 import org.sqg.rpc.RpcContract;
 import org.sqg.rpc.RpcProxy;
+import org.sqg.rpc.RpcRequest;
+import org.sqg.rpc.RpcResponse;
 import org.sqg.thrift.ThriftClientBuilder;
 import org.sqg.thrift.ThriftServiceContainerServer;
 import org.sqg.thrift.generated.Greetings;
 
 public class QPSTest {
+
+    private static final int N = 0x1ffff;
+
+    public static final class DirectRpcClient extends org.sqg.rpc.RpcClient {
+
+        private Object target;
+
+        public DirectRpcClient(final Object target) {
+            this.target = Objects.requireNonNull(target);
+        }
+
+        @Override
+        public void close() {
+            this.target = null;
+        }
+
+        @Override
+        protected RpcResponse doRPC(RpcRequest request) {
+            RpcResponse response = new RpcResponse();
+            try {
+                response.setResult(request.getMethod().invoke(target,
+                        request.getArguments()));
+            } catch (Exception e) {
+                response.setThrowable(e);
+            }
+            return response;
+        }
+    }
 
     @RpcContract
     public interface RpcGreetings {
@@ -83,18 +117,13 @@ public class QPSTest {
                 Student s = new Student();
                 s.setName("sqg");
                 s.setAge(18);
-                String response = null;
-                final int N = 0x1ffff;
-                for (int i = 0; i < 10; ++i)
-                    greetings.hello(s);
                 long t1 = System.nanoTime();
                 for (int i = 0; i < N; ++i)
-                    greetings.hello2();
+                    greetings.hello(s);
                 long t2 = System.nanoTime();
-                LOGGER.info("N = {}, total = {} ms, avg = {} ms, QPS = {}", N,
-                        (t2 - t1) * 1e-6, (t2 - t1) * 1e-6 / N, N
-                                / ((t2 - t1) * 1e-9));
-                LOGGER.info("response is {}", response);
+                LOGGER.info("{}:\t\tN = {},\tQPS = {}", Thread.currentThread()
+                        .getStackTrace()[1].getMethodName(), N, N
+                        / ((t2 - t1) * 1e-9));
             }
         }
     }
@@ -115,18 +144,13 @@ public class QPSTest {
             org.sqg.thrift.generated.Student s = new org.sqg.thrift.generated.Student();
             s.setName("sqg");
             s.setAge(18);
-            String response = null;
-            final int N = 0x1ffff;
-            for (int i = 0; i < 10; ++i)
-                client.hello(s);
             long t1 = System.nanoTime();
             for (int i = 0; i < N; ++i)
-                Assert.assertEquals("OK", response = client.hello(s));
+                client.hello(s);
             long t2 = System.nanoTime();
-            LOGGER.info("N = {}, total = {} ms, avg = {} ms, QPS = {}", N,
-                    (t2 - t1) * 1e-6, (t2 - t1) * 1e-6 / N, N
-                            / ((t2 - t1) * 1e-9));
-            LOGGER.info("response is {}", response);
+            LOGGER.info("{}:\tN = {},\tQPS = {}", Thread.currentThread()
+                    .getStackTrace()[1].getMethodName(), N, N
+                    / ((t2 - t1) * 1e-9));
             client.getInputProtocol().getTransport().close();
         }
     }
@@ -140,26 +164,77 @@ public class QPSTest {
                     server.getLocalAddress())) {
                 RpcGreetings greetings = RpcProxy.newProxyInstance(client,
                         RpcGreetings.class);
-                final int N = 0x1ffff;
-                String response = null;
                 Student s = new Student();
                 s.setName("sqg");
                 s.setAge(18);
-                for (int i = 0; i < 10; ++i)
-                    response = greetings.hello(s);
                 long t1 = System.nanoTime();
                 for (int i = 0; i < N; ++i)
-                    Assert.assertEquals("OK", response = greetings.hello(s));
+                    greetings.hello(s);
                 long t2 = System.nanoTime();
-                LOGGER.info("N = {}, total = {} ms, avg = {} ms, QPS = {}", N,
-                        (t2 - t1) * 1e-6, (t2 - t1) * 1e-6 / N, N
-                                / ((t2 - t1) * 1e-9));
-                LOGGER.info("response is {}", response);
+                LOGGER.info("{}:\tN = {},\tQPS = {}", Thread.currentThread()
+                        .getStackTrace()[1].getMethodName(), N, N
+                        / ((t2 - t1) * 1e-9));
             }
         }
     }
 
     @Test
-    public void testSynchronizedRMIQPS() {
+    public void testNoNetworkRPCQPS() {
+        try (RpcClient client = new DirectRpcClient(new RpcGreetingsImpl())) {
+            RpcGreetings greetings = RpcProxy.newProxyInstance(client,
+                    RpcGreetings.class);
+            Student s = new Student();
+            s.setName("sqg");
+            s.setAge(18);
+            long t1 = System.nanoTime();
+            for (int i = 0; i < N; ++i)
+                greetings.hello(s);
+            long t2 = System.nanoTime();
+            LOGGER.info("{}:\t\tN = {},\tQPS = {}", Thread.currentThread()
+                    .getStackTrace()[1].getMethodName(), N, N
+                    / ((t2 - t1) * 1e-9));
+        }
+    }
+
+    @Test
+    public void testDirectObjectCallQPS() {
+        RpcGreetings greetings = new RpcGreetingsImpl();
+        Student s = new Student();
+        s.setName("sqg");
+        s.setAge(18);
+        long t1 = System.nanoTime();
+        for (int i = 0; i < N; ++i)
+            greetings.hello(s);
+        long t2 = System.nanoTime();
+        LOGGER.info("{}:\t\tN = {},\tQPS = {}", Thread.currentThread()
+                .getStackTrace()[1].getMethodName(), N, N / ((t2 - t1) * 1e-9));
+    }
+
+    @Test
+    public void testBlockingQueueQPS() throws InterruptedException {
+        BlockingQueue<Integer> responses = new ArrayBlockingQueue<>(1);
+        long t1 = System.nanoTime();
+        for (int i = 0; i < N; ++i) {
+            responses.put(i);
+            responses.take();
+        }
+        long t2 = System.nanoTime();
+        LOGGER.info("{}:\t\tN = {},\tQPS = {}", Thread.currentThread()
+                .getStackTrace()[1].getMethodName(), N, N / ((t2 - t1) * 1e-9));
+    }
+
+    @Test
+    public void testOns() throws InterruptedException {
+        final String TOPIC = "NM-YEKAI-TEST";
+        try (org.sqg.ons.RpcServer server = new RpcServer(TOPIC,
+                new Object[] { new RpcGreetingsImpl() })) {
+            server.start();
+            try (org.sqg.ons.RpcClient client = new org.sqg.ons.RpcClient(TOPIC)) {
+                client.start();
+                RpcGreetings greetings = RpcProxy.newProxyInstance(client,
+                        RpcGreetings.class);
+                System.out.println(greetings.hello(new Student()));
+            }
+        }
     }
 }

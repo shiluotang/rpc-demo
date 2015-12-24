@@ -5,22 +5,26 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.lang.reflect.Method;
+import java.util.UUID;
 
 import net.sf.cglib.reflect.FastClass;
 import net.sf.cglib.reflect.FastMethod;
 
 public final class RpcRequest implements Externalizable {
 
+    private UUID requestId;
     private String ifaceName;
     private String methodName;
     private String[] parameterTypeNames;
     private Object[] arguments;
 
     public RpcRequest() {
+        this.requestId = UUID.randomUUID();
     }
 
     public RpcRequest(final Class<?> iface, final String methodName,
             final Class<?>[] parameterTypes, final Object[] arguments) {
+        this.requestId = UUID.randomUUID();
         this.ifaceName = iface.getName();
         this.methodName = methodName;
         this.parameterTypeNames = new String[parameterTypes != null ? parameterTypes.length
@@ -28,6 +32,10 @@ public final class RpcRequest implements Externalizable {
         for (int i = 0, n = parameterTypeNames.length; i < n; ++i)
             this.parameterTypeNames[i] = parameterTypes[i].getName();
         this.arguments = arguments;
+    }
+
+    public UUID getRequestId() {
+        return requestId;
     }
 
     public String getIfaceName() {
@@ -89,6 +97,7 @@ public final class RpcRequest implements Externalizable {
 
     @Override
     public void writeExternal(ObjectOutput out) throws IOException {
+        out.writeObject(requestId);
         out.writeUTF(ifaceName);
         out.writeUTF(methodName);
         if (parameterTypeNames != null) {
@@ -108,6 +117,7 @@ public final class RpcRequest implements Externalizable {
     @Override
     public void readExternal(ObjectInput in) throws IOException,
             ClassNotFoundException {
+        requestId = (UUID)in.readObject();
         ifaceName = in.readUTF();
         methodName = in.readUTF();
         parameterTypeNames = new String[in.readInt()];

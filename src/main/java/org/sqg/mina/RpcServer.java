@@ -61,7 +61,7 @@ public final class RpcServer implements AutoCloseable {
         if (service == null) {
             synchronized (this) {
                 if (service == null) {
-                    LOGGER.info("start server at {} start...",
+                    LOGGER.debug("start server at {} start...",
                             getLocalAddress());
                     try {
                         NioSocketAcceptor service = new NioSocketAcceptor();
@@ -79,7 +79,7 @@ public final class RpcServer implements AutoCloseable {
                         }
                         throw new RuntimeException(e);
                     }
-                    LOGGER.info("start server at {} stopped.",
+                    LOGGER.debug("start server at {} stopped.",
                             getLocalAddress());
                 }
             }
@@ -90,11 +90,11 @@ public final class RpcServer implements AutoCloseable {
         if (service != null) {
             synchronized (this) {
                 if (service != null) {
-                    LOGGER.info("stop server at {} start...", getLocalAddress());
+                    LOGGER.debug("stop server at {} start...", getLocalAddress());
                     service.unbind();
                     service.dispose();
                     service = null;
-                    LOGGER.info("stop server at {} stopped.", getLocalAddress());
+                    LOGGER.debug("stop server at {} stopped.", getLocalAddress());
                 }
             }
         }

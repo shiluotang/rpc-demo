@@ -81,7 +81,7 @@ public final class RpcClient extends org.sqg.rpc.RpcClient {
             });
             bootstrap.option(ChannelOption.TCP_NODELAY, Boolean.TRUE);
             channel = bootstrap.connect(remoteServerAddress).sync().channel();
-            LOGGER.info("connected to {}.", remoteServerAddress);
+            LOGGER.debug("connected to {}.", remoteServerAddress);
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
@@ -95,7 +95,6 @@ public final class RpcClient extends org.sqg.rpc.RpcClient {
                                 remoteServerAddress.getPort()).sync().channel();
             channel.writeAndFlush(request).sync();
             RpcResponse response = responses.take();
-            LOGGER.debug("RESPONSE is {}", response);
             return response;
         } catch (InterruptedException e) {
             throw new RuntimeException(e);

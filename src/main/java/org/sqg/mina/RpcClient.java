@@ -32,7 +32,7 @@ public final class RpcClient extends org.sqg.rpc.RpcClient {
                 super.exceptionCaught(session, cause);
                 RpcClient.this.session = null;
             }
-            responses.put(new RpcResponse(null, cause));
+            responses.put(new RpcResponse(null, null, cause));
         }
 
         @Override

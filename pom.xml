@@ -17,7 +17,6 @@
         <mina.version>2.0.9</mina.version>
         <netty.version>4.0.30.Final</netty.version>
         <cglib.version>3.1</cglib.version>
-        <exec.mainClass>org.sqg.minatest.JdkSerializer</exec.mainClass>
     </properties>
 
     <dependencies>
@@ -44,8 +43,14 @@
         </dependency>
         <dependency>
             <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-simple</artifactId>
+            <artifactId>slf4j-log4j12</artifactId>
             <version>${slf4j.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>log4j</groupId>
+            <artifactId>log4j</artifactId>
+            <version>1.2.15</version>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -74,7 +79,22 @@
             <artifactId>cglib</artifactId>
             <version>${cglib.version}</version>
         </dependency>
-
+        <dependency>
+            <groupId>com.aliyun.openservices</groupId>
+            <artifactId>ons-sdk</artifactId>
+            <version>1.1.10</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>com.taobao.diamond</groupId>
+                    <artifactId>diamond-client</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>commons-lang</groupId>
+            <artifactId>commons-lang</artifactId>
+            <version>2.3</version>
+        </dependency>
     </dependencies>
     <build>
         <plugins>

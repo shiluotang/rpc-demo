@@ -39,9 +39,9 @@ public final class ThriftServerRunner implements Runnable {
     public void run() {
         TServer server = thriftServerRef.get();
         if (server != null) {
-            LOGGER.info("thrift server {} start...", server);
+            LOGGER.debug("thrift server {} start...", server);
             server.serve();
-            LOGGER.info("thrift server {} stopped.", server);
+            LOGGER.debug("thrift server {} stopped.", server);
         }
     }
 }

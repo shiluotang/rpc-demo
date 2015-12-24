@@ -4,18 +4,30 @@ import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import java.util.UUID;
 
 public final class RpcResponse implements Externalizable {
 
+    private UUID requestId;
     private Object result;
     private Throwable throwable;
 
     public RpcResponse() {
     }
 
-    public RpcResponse(final Object result, final Throwable throwable) {
+    public RpcResponse(final UUID requestId, final Object result,
+            final Throwable throwable) {
+        this.requestId = requestId;
         this.result = result;
         this.throwable = throwable;
+    }
+
+    public void setRequestId(final UUID value) {
+        requestId = value;
+    }
+
+    public UUID getRequestId() {
+        return requestId;
     }
 
     public Object getResult() {
@@ -36,14 +48,16 @@ public final class RpcResponse implements Externalizable {
 
     @Override
     public void writeExternal(final ObjectOutput out) throws IOException {
-        out.writeObject(throwable);
+        out.writeObject(requestId);
         out.writeObject(result);
+        out.writeObject(throwable);
     }
 
     @Override
     public void readExternal(final ObjectInput in) throws IOException,
             ClassNotFoundException {
-        throwable = (Throwable) in.readObject();
+        requestId = (UUID) in.readObject();
         result = in.readObject();
+        throwable = (Throwable) in.readObject();
     }
 }

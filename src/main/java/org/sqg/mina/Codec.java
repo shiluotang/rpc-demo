@@ -10,12 +10,12 @@ import org.apache.mina.filter.codec.demux.DemuxingProtocolCodecFactory;
 import org.apache.mina.filter.codec.demux.MessageDecoderAdapter;
 import org.apache.mina.filter.codec.demux.MessageDecoderResult;
 import org.apache.mina.filter.codec.demux.MessageEncoder;
-import org.sqg.util.JdkSerializer;
+import org.sqg.util.KryoSerializer;
 import org.sqg.util.Serializer;
 
 public final class Codec<U, V> extends DemuxingProtocolCodecFactory {
 
-    private static final Serializer SERIALIZER = new JdkSerializer();
+    private static final Serializer SERIALIZER = new KryoSerializer();
 
     private final class Decoder extends MessageDecoderAdapter {
 
